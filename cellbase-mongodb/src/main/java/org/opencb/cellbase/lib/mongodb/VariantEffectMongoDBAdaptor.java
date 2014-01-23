@@ -62,14 +62,21 @@ public class VariantEffectMongoDBAdaptor extends MongoDBAdaptor implements Varia
         GenomicVariantEffectPredictor genomicVariantEffectPredictor = new GenomicVariantEffectPredictor();
         
         for (GenomicVariant genomicVariant : variants) {
-            long dbTimeStart = System.currentTimeMillis();
-            List<Gene> genes = getAllGenesByVariant(genomicVariant);
-            List<RegulatoryRegion> regions = getAllRegulatoryRegionsByVariant(genomicVariant);
-//            List<RegulatoryRegion> regions = null;
-            List<GenomicVariantEffect> list = genomicVariantEffectPredictor.getAllEffectsByVariant(genomicVariant, genes, regions);
-            long dbTimeEnd = System.currentTimeMillis();
-            
             QueryResult queryResult = new QueryResult();
+            long dbTimeStart, dbTimeEnd;
+            List<GenomicVariantEffect> list;
+            if (genomicVariant.getPosition() >= 0) {
+                dbTimeStart = System.currentTimeMillis();
+                List<Gene> genes = getAllGenesByVariant(genomicVariant);
+                List<RegulatoryRegion> regions = getAllRegulatoryRegionsByVariant(genomicVariant);
+                list = genomicVariantEffectPredictor.getAllEffectsByVariant(genomicVariant, genes, regions);
+                dbTimeEnd = System.currentTimeMillis();
+            } else {
+                dbTimeStart = dbTimeEnd = 0;
+                list = new ArrayList<>();
+                queryResult.put("warningMsg", "Genomic position must be equals or greater than zero");
+            }
+            
             queryResult.setDBTime((dbTimeEnd - dbTimeStart));
             queryResult.setNumResults(list.size());
             queryResult.setResult(list);

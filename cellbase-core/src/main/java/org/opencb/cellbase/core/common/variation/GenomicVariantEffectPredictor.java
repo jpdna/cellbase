@@ -342,11 +342,14 @@ public class GenomicVariantEffectPredictor {
     }
 
     private GenomicVariantEffect createIntergenicGenomicVariantEffect(GenomicVariant genomicVariant) {
-        GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect();
-        genomicVariantEffect.setChromosome(genomicVariant.getChromosome());
-        genomicVariantEffect.setPosition(genomicVariant.getPosition());
-        genomicVariantEffect.setReferenceAllele(genomicVariant.getReference());
-        genomicVariantEffect.setAlternativeAllele(genomicVariant.getAlternative());
+        String soTerm = "intergenic_variant";
+        GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect(genomicVariant.getChromosome(), 
+                genomicVariant.getPosition(), genomicVariant.getReference(), genomicVariant.getAlternative(),
+                "", "", "", "", 
+                "", -1, -1, "", 
+                "", "", "", "", "", "", 
+                consequenceTypeMap.get(soTerm).getSoAccesion(), soTerm, consequenceTypeMap.get(soTerm).getSoDescription(), 
+                "", -1, "", "", -1, "", -1, "", -1, -1);
         return genomicVariantEffect;
     }
     /*
