@@ -8,25 +8,25 @@ import org.opencb.cellbase.core.common.regulatory.RegulatoryRegion;
 import java.util.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: imedina
- * Date: 10/31/13
- * Time: 11:40 AM
+ * Created with IntelliJ IDEA. 
+ * User: imedina 
+ * Date: 10/31/13 
+ * Time: 11:40 AM 
  * To change this template use File | Settings | File Templates.
  */
 public class GenomicVariantEffectPredictor {
     //	private static int FEATURE_MAP_CHUNK_SIZE = 400;
 
-    /** Options **/
+    /**
+     * Options *
+     */
     private boolean showFeatures = false;
     private boolean showVariation = true;
     private boolean showRegulatory = true;
     private boolean showDiseases = true;
-
 //    private DBAdaptorFactory dbAdaptorFact;
 //    private GenomeSequenceDBAdaptor sequenceDbAdaptor;
 //    private SnpDBAdaptor snpDbAdaptor;
-
     protected static ResourceBundle resourceBundle;
     private static Map<String, ConsequenceType> consequenceTypeMap;
 
@@ -34,17 +34,17 @@ public class GenomicVariantEffectPredictor {
         resourceBundle = ResourceBundle.getBundle("org.opencb.cellbase.core.variation.variation_consequences");
         consequenceTypeMap = new HashMap<>();
 
-        if(resourceBundle != null) {
+        if (resourceBundle != null) {
             Set<String> keys = resourceBundle.keySet();
             Iterator<String> iterator = keys.iterator();
             String nextKey;
             String[] fields;
-            while(iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 nextKey = iterator.next();
                 fields = resourceBundle.getString(nextKey).split(";", -1);
-                if(fields.length == 2) {
+                if (fields.length == 2) {
                     consequenceTypeMap.put(nextKey, new ConsequenceType(nextKey, fields[1], fields[0], ""));
-                }else {
+                } else {
                     consequenceTypeMap.put(nextKey, new ConsequenceType(nextKey, fields[1], fields[0], fields[2]));
                 }
             }
@@ -94,10 +94,6 @@ public class GenomicVariantEffectPredictor {
 //        sequenceDbAdaptor = dbAdaptorFact.getGenomeSequenceDBAdaptor(species, version);
 //        snpDbAdaptor = dbAdaptorFact.getSnpDBAdaptor(species, version);
 //    }
-
-
-
-
 //    @Override
 //    public List<GenomicVariantEffect> getAllConsequenceTypeByVariant(GenomicVariant variant) {
 //        return getAllConsequenceTypeByVariant(variant, null);
@@ -111,8 +107,6 @@ public class GenomicVariantEffectPredictor {
 //        return consequenceTypesList;
 //
 //    }
-
-
 //    public List<GenomicVariantEffect> getAllConsequenceTypeByVariantList(List<GenomicVariant> variants) {
 //        return getAllConsequenceTypeByVariantList(variants, null);
 //    }
@@ -131,13 +125,8 @@ public class GenomicVariantEffectPredictor {
 //        session.close();
 //        return consequenceTypeList;
 //    }
-
-
-
     @SuppressWarnings("unchecked")
-//    public List<GenomicVariantEffect> getAllEffectsByVariant(List<GenomicVariant> variants, Set<String> excludeSet, Session session) {
     public List<GenomicVariantEffect> getAllEffectsByVariant(GenomicVariant variant, List<Gene> genes, List<RegulatoryRegion> regulatoryRegions) {
-
         List<GenomicVariantEffect> genomicVariantEffectList = new ArrayList<>();
 //        List<Snp> snps;
 
@@ -167,63 +156,64 @@ public class GenomicVariantEffectPredictor {
 //            }
 //        }
 
-        boolean isForward;
+        if (genes != null && genes.size() > 0) {
+            for (Gene gene : genes) {
 
-        if(genes != null && genes.size() > 0) {
-            for(Gene gene: genes) {
+                for (Transcript transcript : gene.getTranscripts()) {
 
-                for(Transcript transcript: gene.getTranscripts()) {
-
-                    if(variant.getPosition() < transcript.getStart() - 5000 || variant.getPosition() > transcript.getEnd() + 5000 ) {
+                    if (variant.getPosition() < transcript.getStart() - 5000 || variant.getPosition() > transcript.getEnd() + 5000) {
                         continue;
                     }
 
-                    isForward = transcript.getStrand().equals("+") || transcript.getStrand().equals("1") || transcript.getStrand().equals("");
+                    boolean isForward = transcript.getStrand().equals("+") || transcript.getStrand().equals("1") || transcript.getStrand().equals("");
 
-                    switch(transcript.getBiotype()) {
-                        case "miRNA":   genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "mature_miRNA_variant"));
+                    switch (transcript.getBiotype()) {
+                        case "miRNA":
+                            genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "mature_miRNA_variant"));
                             break;
-                        case "nonsense_mediated_decay": genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "NMD_transcript_variant"));
+                        case "nonsense_mediated_decay":
+                            genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "NMD_transcript_variant"));
                             break;
-                        case "non_coding":  genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "nc_transcript_variant"));
+                        case "non_coding":
+                            genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "nc_transcript_variant"));
                             break;
                     }
 
                     // UPS ?
-                    if(variant.getPosition() >= transcript.getStart() - 5000 &&  variant.getPosition() < transcript.getStart()) {
-                        if(isForward) {
+                    if (variant.getPosition() >= transcript.getStart() - 5000 && variant.getPosition() < transcript.getStart()) {
+                        if (isForward) {
                             genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "upstream_gene_variant"));
-                        }else {
+                        } else {
                             genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "downstream_gene_variant"));
                         }
-                    }else {
+                    } else {
                         // DOW ?
-                        if(variant.getPosition() > transcript.getEnd() && variant.getPosition() <= transcript.getEnd() + 5000) {
-                            if(isForward) {
+                        if (variant.getPosition() > transcript.getEnd() && variant.getPosition() <= transcript.getEnd() + 5000) {
+                            if (isForward) {
                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "downstream_gene_variant"));
-                            }else {
+                            } else {
                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "upstream_gene_variant"));
                             }
-                        }else {
+                        } else {
                             // coding
-                            for(Exon exon: transcript.getExons()) {
+                            for (Exon exon : transcript.getExons()) {
 
                                 System.out.println(exon.toString());
 
-                                if(variant.getPosition() < exon.getStart()) {
+                                if (variant.getPosition() < exon.getStart()) {
                                     genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "intron_variant"));
 
-                                    if(variant.getPosition() >= exon.getStart() - 8 && variant.getPosition() <= exon.getStart() - 3 ) {
+                                    if (variant.getPosition() >= exon.getStart() - 8 && variant.getPosition() <= exon.getStart() - 3) {
                                         genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_region_variant"));
-                                    }else {
-                                        if(variant.getPosition() == exon.getStart() - 1 || variant.getPosition() == exon.getStart() - 2) {
-                                            if(isForward) {
+                                    } else {
+                                        if (variant.getPosition() == exon.getStart() - 1 || variant.getPosition() == exon.getStart() - 2) {
+                                            if (isForward) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_acceptor_variant"));
-                                            }else {
+                                            } else {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_donor_variant"));
                                             }
-                                        }else {
-                                            if(variant.getPosition() >= exon.getStart() && variant.getPosition() <= exon.getStart() + 3 ) {
+                                        } else {
+                                            if (variant.getPosition() >= exon.getStart() && variant.getPosition() <= exon.getStart() + 3) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_region_variant"));
                                             }
                                         }
@@ -232,34 +222,34 @@ public class GenomicVariantEffectPredictor {
                                 }
 
                                 // Splices
-                                if(variant.getPosition() >= exon.getStart() - 8 && variant.getPosition() <= exon.getStart() + 3) {
-                                    if(variant.getPosition() >= exon.getStart() - 8 && variant.getPosition() <= exon.getStart() - 3 ) {
+                                if (variant.getPosition() >= exon.getStart() - 8 && variant.getPosition() <= exon.getStart() + 3) {
+                                    if (variant.getPosition() >= exon.getStart() - 8 && variant.getPosition() <= exon.getStart() - 3) {
                                         genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_region_variant"));
-                                    }else {
-                                        if(variant.getPosition() == exon.getStart() - 1 || variant.getPosition() == exon.getStart() - 2) {
-                                            if(isForward) {
+                                    } else {
+                                        if (variant.getPosition() == exon.getStart() - 1 || variant.getPosition() == exon.getStart() - 2) {
+                                            if (isForward) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_acceptor_variant"));
-                                            }else {
+                                            } else {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_donor_variant"));
                                             }
-                                        }else {
-                                            if(variant.getPosition() >= exon.getStart() && variant.getPosition() <= exon.getStart() + 3 ) {
+                                        } else {
+                                            if (variant.getPosition() >= exon.getStart() && variant.getPosition() <= exon.getStart() + 3) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_region_variant"));
                                             }
                                         }
                                     }
-                                }else if(variant.getPosition() >= exon.getEnd() - 3 && variant.getPosition() <= exon.getEnd() + 8){
-                                    if(variant.getPosition() >= exon.getEnd() - 3 && variant.getPosition() <= exon.getEnd() ) {
+                                } else if (variant.getPosition() >= exon.getEnd() - 3 && variant.getPosition() <= exon.getEnd() + 8) {
+                                    if (variant.getPosition() >= exon.getEnd() - 3 && variant.getPosition() <= exon.getEnd()) {
                                         genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_region_variant"));
-                                    }else {
-                                        if(variant.getPosition() == exon.getEnd() + 1 || variant.getPosition() == exon.getEnd() + 2) {
-                                            if(isForward) {
+                                    } else {
+                                        if (variant.getPosition() == exon.getEnd() + 1 || variant.getPosition() == exon.getEnd() + 2) {
+                                            if (isForward) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_donor_variant"));
-                                            }else {
+                                            } else {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_acceptor_variant"));
                                             }
-                                        }else {
-                                            if(variant.getPosition() >= exon.getEnd() + 3 && variant.getPosition() <= exon.getEnd() + 8 ) {
+                                        } else {
+                                            if (variant.getPosition() >= exon.getEnd() + 3 && variant.getPosition() <= exon.getEnd() + 8) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "splice_region_variant"));
                                             }
                                         }
@@ -268,34 +258,33 @@ public class GenomicVariantEffectPredictor {
 
 
                                 // primer y ultimo exon....
-                                if(variant.getPosition() >= exon.getStart() && variant.getPosition() <= exon.getEnd()) {
+                                if (variant.getPosition() >= exon.getStart() && variant.getPosition() <= exon.getEnd()) {
 
                                     // UTRs
-                                    if(exon.getGenomicCodingStart() == 0 && exon.getGenomicCodingEnd() == 0) {
-                                        if(isForward){
+                                    if (exon.getGenomicCodingStart() == 0 && exon.getGenomicCodingEnd() == 0) {
+                                        if (isForward) {
                                             genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "5_prime_UTR_variant"));
-                                        }else{
+                                        } else {
                                             genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "3_prime_UTR_variant"));
                                         }
-                                    }else {
-                                        if(variant.getPosition() < exon.getGenomicCodingStart()) {
-                                            if(isForward){
+                                    } else {
+                                        if (variant.getPosition() < exon.getGenomicCodingStart()) {
+                                            if (isForward) {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "5_prime_UTR_variant"));
-                                            }else{
+                                            } else {
                                                 genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "3_prime_UTR_variant"));
                                             }
-                                        }else {
-                                            if(variant.getPosition() > exon.getGenomicCodingEnd()){
-                                                if(isForward){
+                                        } else {
+                                            if (variant.getPosition() > exon.getGenomicCodingEnd()) {
+                                                if (isForward) {
                                                     genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "3_prime_UTR_variant"));
-                                                }else{
+                                                } else {
                                                     genomicVariantEffectList.add(createGenomicVariantEffect(variant, gene, transcript, "5_prime_UTR_variant"));
                                                 }
-                                            }else {
+                                            } else {
 
                                                 // non-syn
-                                                if(transcript.getBiotype().equals("protein_coding") || transcript.getBiotype().equals("nonsense_mediated_decay")) {
-
+                                                if (transcript.getBiotype().equals("protein_coding") || transcript.getBiotype().equals("nonsense_mediated_decay")) {
                                                 }
                                             }
 
@@ -312,31 +301,45 @@ public class GenomicVariantEffectPredictor {
                 }
             }
 
-        }else {
+        } else {
             genomicVariantEffectList.add(createIntergenicGenomicVariantEffect(variant));
         }
 
+        // TODO Regulatory regions
+        if (regulatoryRegions != null && regulatoryRegions.size() > 0) {
+            for (RegulatoryRegion regulatoryRegion : regulatoryRegions) {
+                genomicVariantEffectList.add(createRegulatoryGenomicVariantEffect(variant, regulatoryRegion));
+            }
+        }
 
 
         return genomicVariantEffectList;
     }
 
     private GenomicVariantEffect createGenomicVariantEffect(GenomicVariant genomicVariant, Gene gene, Transcript transcript, String soTerm) {
-        GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect(genomicVariant.getChromosome(), genomicVariant.getPosition(), genomicVariant.getReference(), genomicVariant.getAlternative(),
-                transcript.getId(), transcript.getName(), "transcrri[pt", transcript.getBiotype(), transcript.getChromosome(), transcript.getStart(), transcript.getEnd(), transcript.getStrand(), "", "", "", gene.getId(),
-                transcript.getId(), gene.getName(), consequenceTypeMap.get(soTerm).getSoAccesion(), soTerm, consequenceTypeMap.get(soTerm).getSoDescription(), "", -1, "", "", -1, "", -1, "", -1, -1);
+        GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect(genomicVariant.getChromosome(), 
+                genomicVariant.getPosition(), genomicVariant.getReference(), genomicVariant.getAlternative(),
+                transcript.getId(), transcript.getName(), "transcript", transcript.getBiotype(), 
+                transcript.getChromosome(), transcript.getStart(), transcript.getEnd(), transcript.getStrand(), 
+                "", "", "", gene.getId(), transcript.getId(), gene.getName(), 
+                consequenceTypeMap.get(soTerm).getSoAccesion(), soTerm, consequenceTypeMap.get(soTerm).getSoDescription(), 
+                "", -1, "", "", -1, "", -1, "", -1, -1);
         return genomicVariantEffect;
     }
 
-
-    private GenomicVariantEffect createGenomicVariantEffect(GenomicVariant genomicVariant, Variation variation) {
-        GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect();
-
-
-
+    private GenomicVariantEffect createRegulatoryGenomicVariantEffect(GenomicVariant genomicVariant, RegulatoryRegion regulatoryRegion) {
+        String soTerm = "regulatory_region_variant";
+        
+        // TODO How to retrieve feature ID?
+        GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect(genomicVariant.getChromosome(), 
+                genomicVariant.getPosition(), genomicVariant.getReference(), genomicVariant.getAlternative(),
+                "", regulatoryRegion.getName(), "regulatory_region", "", 
+                regulatoryRegion.getChromosome(), regulatoryRegion.getStart(), regulatoryRegion.getEnd(), "", 
+                "", "", "", "", "", "", 
+                consequenceTypeMap.get(soTerm).getSoAccesion(), soTerm, consequenceTypeMap.get(soTerm).getSoDescription(), 
+                "", -1, "", "", -1, "", -1, "", -1, -1);
         return genomicVariantEffect;
     }
-
 
     private GenomicVariantEffect createIntergenicGenomicVariantEffect(GenomicVariant genomicVariant) {
         GenomicVariantEffect genomicVariantEffect = new GenomicVariantEffect();
@@ -346,197 +349,233 @@ public class GenomicVariantEffectPredictor {
         genomicVariantEffect.setAlternativeAllele(genomicVariant.getAlternative());
         return genomicVariantEffect;
     }
-
-
-
-        /*if(featureMapList != null) {
-//				genomicVariantEffectList = new ArrayList<GenomicVariantEffect>(featureMapList.size());
-
-            // we must know if the position is UTR for EACH of the transcripts
-            isFeatureUTR.clear();
-            for(FeatureMap featureMap: featureMapList) {
-                if(featureMap.getFeatureType().equalsIgnoreCase("5_prime_utr") || featureMap.getFeatureType().equalsIgnoreCase("3_prime_utr")) {
-                    isFeatureUTR.put(featureMap.getTranscriptStableId(), true);
-                }else {
-                    if(!isFeatureUTR.containsKey(featureMap.getTranscriptStableId())) {
-                        isFeatureUTR.put(featureMap.getTranscriptStableId(), false);
-                    }
-                }
-            }
-
-            // to avoid NPE
-            if(excludeSet == null) {
-                excludeSet = new HashSet<String>();
-            }
-
-            for(FeatureMap featureMap: featureMapList) {
-                //				if(featureMap.getFeatureType().equalsIgnoreCase("gene")) {
-                ////				genomicVariantConsequenceType.add(new GenomicVariantEffect(chromosome, start, end, id, name, type, biotype, featureChromosome, featureStart, featureEnd, featureStrand, snpId, ancestral, alternative, geneId, transcriptId, geneName, consequenceTypeSoAccession, consequenceTypeObo, consequenceTypeDesc, consequenceTypeType, aminoacidChange, codonChange));
-                //					continue;
-                //				}
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("transcript")) {
-                    if (featureMap.getBiotype().equalsIgnoreCase("mirna") && !excludeSet.contains(consequenceTypeMap.get("mirna").getSoTerm())){
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "mirna"));
-                    }
-                    if (featureMap.getBiotype().equalsIgnoreCase("nonsense_mediated_decay") && !excludeSet.contains(consequenceTypeMap.get("nmd_transcript").getSoTerm())){
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "nmd_transcript"));
-                    }
-                    if (featureMap.getBiotype().equalsIgnoreCase("lincrna") && !excludeSet.contains(consequenceTypeMap.get("lincrna").getSoTerm())){
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "lincrna"));
-                    }
-                    if (featureMap.getBiotype().equalsIgnoreCase("pseudogene") && !excludeSet.contains(consequenceTypeMap.get("pseudogene").getSoTerm())){
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "pseudogene"));
-                    }
-                    if (featureMap.getBiotype().equalsIgnoreCase("non_coding") && !excludeSet.contains(consequenceTypeMap.get("nc_transcript").getSoTerm())){
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "nc_transcript"));
-                    }
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("intron") && !excludeSet.contains(consequenceTypeMap.get("intron").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "intron"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType(). equalsIgnoreCase("splice_site") && !excludeSet.contains(consequenceTypeMap.get("splice_site").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "splice_site"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType(). equalsIgnoreCase("splice_donor") && !excludeSet.contains(consequenceTypeMap.get("splice_donor").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "splice_donor"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType(). equalsIgnoreCase("splice_acceptor") && !excludeSet.contains(consequenceTypeMap.get("splice_acceptor").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "splice_acceptor"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("exon") && !excludeSet.contains(consequenceTypeMap.get("exon").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "exon"));
-
-                    //	int codonPosition = -1;
-                    //					if (!isUTR && featureMap.getBiotype().equalsIgnoreCase("protein_coding")) {
-                    if (isFeatureUTR.get(featureMap.getTranscriptStableId()) != null && !isFeatureUTR.get(featureMap.getTranscriptStableId()) && (featureMap.getBiotype().equalsIgnoreCase("protein_coding") || featureMap.getBiotype().equalsIgnoreCase("nonsense_mediated_decay"))) {
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "coding_sequence"));
-                        // && !featureMap.getExonPhase().equals("-1") ==> not needed!!
-                        // If exon contains a UTR part is not processed here as 'if' clause above does not allow to enter this code
-                        // so there is not need to check if phase is -1 (which means that there is a 5'-UTR part)
-                        if(!featureMap.getExonPhase().equals("")) {
-                            int aaPosition = -1;
-                            int exonOffset = -1;
-                            if(featureMap.getStrand().equals("1")) {
-                                // If ExonPhase is -1 means we are in an exon with UTR and is not the UTR part,
-                                // we only need to calculate the offset in cdna without getTranscriptCdnaCodingStart()
-                                exonOffset = variant.getPosition() - featureMap.getStart() + 1;
-                                if(featureMap.getExonPhase() != null && featureMap.getExonPhase().equals("-1") && exonOffset > featureMap.getTranscriptCdnaCodingStart()) {
-                                    aaPosition = ((exonOffset - featureMap.getTranscriptCdnaCodingStart())/3)+1;
-                                    System.out.println("UTR-EXON: aaPosition: "+aaPosition);
-                                }else {
-                                    aaPosition = ((exonOffset + featureMap.getExonCdnaCodingStart()-featureMap.getTranscriptCdnaCodingStart() -1 )/3)+1;
-                                    System.out.println("EXON: aaPosition: "+aaPosition);
-                                }
-                            }else {
-                                exonOffset = featureMap.getEnd()-variant.getPosition()+1;
-                                if(featureMap.getExonPhase() != null && featureMap.getExonPhase().equals("-1") && exonOffset > featureMap.getTranscriptCdnaCodingStart()) {
-                                    aaPosition = ((exonOffset - featureMap.getTranscriptCdnaCodingStart())/3)+1;
-                                }else {
-                                    aaPosition = ((exonOffset + featureMap.getExonCdnaCodingStart()-featureMap.getTranscriptCdnaCodingStart() - 1)/3)+1;
-                                }
-                            }
-
-                            String[] codons =  getSequenceByCodon(variant, featureMap);
-                            if(DNASequenceUtils.codonToAminoacidShort.get(codons[0]) != null && DNASequenceUtils.codonToAminoacidShort.get(codons[1]) != null) {
-                                if(DNASequenceUtils.codonToAminoacidShort.get(codons[0]).equals(DNASequenceUtils.codonToAminoacidShort.get(codons[1]))){
-                                    //								this.addConsequenceType(transcript, "synonymous_codon", "SO:0001588", "In coding sequence, not resulting in an amino acid change (silent mutation)", "consequenceTypeType" );
-                                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "synonymous_codon", aaPosition, DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]), codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T")));
-                                }else{
-                                    //								this.addConsequenceType(transcript, "non_synonymous_codon", "SO:0001583", "In coding sequence and results in an amino acid change in the encoded peptide sequence", "consequenceTypeType", DNASequenceUtils.codonToAminoacidShort.get(referenceSequence)+"/"+ DNASequenceUtils.codonToAminoacidShort.get(alternative), referenceSequence.replace("U", "T")+"/"+alternative.replace("U", "T")  );
-                                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "non_synonymous_codon", aaPosition, DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]), codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T")));
-
-                                    if ((!DNASequenceUtils.codonToAminoacidShort.get(codons[0]).toLowerCase().equals("stop"))&& (DNASequenceUtils.codonToAminoacidShort.get(codons[1]).toLowerCase().equals("stop"))){
-                                        //									this.addConsequenceType(transcript, "stop_gained", "SO:0001587", "In coding sequence, resulting in the gain of a stop codon", "consequenceTypeType", DNASequenceUtils.codonToAminoacidShort.get(referenceSequence)+"/"+ DNASequenceUtils.codonToAminoacidShort.get(alternative), referenceSequence.replace("U", "T")+"/"+alternative.replace("U", "T")  );
-                                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "stop_gained", aaPosition, DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]), codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T")));
-                                    }
-
-                                    if ((DNASequenceUtils.codonToAminoacidShort.get(codons[0]).toLowerCase().equals("stop"))&& (!DNASequenceUtils.codonToAminoacidShort.get(codons[1]).toLowerCase().equals("stop"))){
-                                        //									this.addConsequenceType(transcript, "stop_lost", "SO:0001578", "In coding sequence, resulting in the loss of a stop codon", "consequenceTypeType", DNASequenceUtils.codonToAminoacidShort.get(referenceSequence)+"/"+ DNASequenceUtils.codonToAminoacidShort.get(alternative), referenceSequence.replace("U", "T")+"/"+alternative.replace("U", "T")  );
-                                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "stop_lost", aaPosition, DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]), codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T")));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("regulatory_region") && !excludeSet.contains(consequenceTypeMap.get("regulatory_region").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "regulatory_region"));
-
-                    if(featureMap.getFeatureName().equalsIgnoreCase("dnase1") || featureMap.getFeatureName().equalsIgnoreCase("faire")) {
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "dnase1"));
-                    }
-
-                    if(featureMap.getFeatureName().equalsIgnoreCase("PolII") || featureMap.getFeatureName().equalsIgnoreCase("PolIII")) {
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "polymerase"));
-                    }
-
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("tfbs") && !excludeSet.contains(consequenceTypeMap.get("tfbs").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "tfbs"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("mirna_target") && !excludeSet.contains(consequenceTypeMap.get("mirna_target").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "mirna_target"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("upstream") && !excludeSet.contains(consequenceTypeMap.get("upstream").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "upstream"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("downstream") && !excludeSet.contains(consequenceTypeMap.get("downstream").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "downstream"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("5_prime_utr") && !excludeSet.contains(consequenceTypeMap.get("5_prime_utr").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "5_prime_utr"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("3_prime_utr") && !excludeSet.contains(consequenceTypeMap.get("3_prime_utr").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "3_prime_utr"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("CpG_island") && !excludeSet.contains(consequenceTypeMap.get("cpg_island").getSoTerm())) {
-                    genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, "cpg_island"));
-                    continue;
-                }
-
-                if(featureMap.getFeatureType().equalsIgnoreCase("snp") && !excludeSet.contains(consequenceTypeMap.get("snp").getSoTerm())) {
-                    // special method
-                    snps = snpDbAdaptor.getAllBySnpId(featureMap.getFeatureName());
-                    if(snps != null && snps.size() > 0) {
-                        genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant, featureMap, snps.get(0), "snp"));
-                    }
-                    continue;
-                }
-
-            }
-        }else {
-            // intergenic!!
-//				genomicVariantEffectList = new ArrayList<GenomicVariantEffect>(1);
-
-        }*/
-
-
-
+    /*
+     * if(featureMapList != null) { //	genomicVariantEffectList = new
+     * ArrayList<GenomicVariantEffect>(featureMapList.size());
+     *
+     * // we must know if the position is UTR for EACH of the transcripts
+     * isFeatureUTR.clear(); for(FeatureMap featureMap: featureMapList) {
+     * if(featureMap.getFeatureType().equalsIgnoreCase("5_prime_utr") ||
+     * featureMap.getFeatureType().equalsIgnoreCase("3_prime_utr")) {
+     * isFeatureUTR.put(featureMap.getTranscriptStableId(), true); }else {
+     * if(!isFeatureUTR.containsKey(featureMap.getTranscriptStableId())) {
+     * isFeatureUTR.put(featureMap.getTranscriptStableId(), false); } } }
+     *
+     * // to avoid NPE if(excludeSet == null) { excludeSet = new
+     * HashSet<String>(); }
+     *
+     * for(FeatureMap featureMap: featureMapList) { //
+     * if(featureMap.getFeatureType().equalsIgnoreCase("gene")) { ////
+     * genomicVariantConsequenceType.add(new GenomicVariantEffect(chromosome,
+     * start, end, id, name, type, biotype, featureChromosome, featureStart,
+     * featureEnd, featureStrand, snpId, ancestral, alternative, geneId,
+     * transcriptId, geneName, consequenceTypeSoAccession, consequenceTypeObo,
+     * consequenceTypeDesc, consequenceTypeType, aminoacidChange, codonChange));
+     * //	continue; //	}
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("transcript")) { if
+     * (featureMap.getBiotype().equalsIgnoreCase("mirna") &&
+     * !excludeSet.contains(consequenceTypeMap.get("mirna").getSoTerm())){
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "mirna")); } if
+     * (featureMap.getBiotype().equalsIgnoreCase("nonsense_mediated_decay") &&
+     * !excludeSet.contains(consequenceTypeMap.get("nmd_transcript").getSoTerm())){
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "nmd_transcript")); } if
+     * (featureMap.getBiotype().equalsIgnoreCase("lincrna") &&
+     * !excludeSet.contains(consequenceTypeMap.get("lincrna").getSoTerm())){
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "lincrna")); } if
+     * (featureMap.getBiotype().equalsIgnoreCase("pseudogene") &&
+     * !excludeSet.contains(consequenceTypeMap.get("pseudogene").getSoTerm())){
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "pseudogene")); } if
+     * (featureMap.getBiotype().equalsIgnoreCase("non_coding") &&
+     * !excludeSet.contains(consequenceTypeMap.get("nc_transcript").getSoTerm())){
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "nc_transcript")); } continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("intron") &&
+     * !excludeSet.contains(consequenceTypeMap.get("intron").getSoTerm())) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "intron")); continue; }
+     *
+     * if(featureMap.getFeatureType(). equalsIgnoreCase("splice_site") &&
+     * !excludeSet.contains(consequenceTypeMap.get("splice_site").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "splice_site")); continue; }
+     *
+     * if(featureMap.getFeatureType(). equalsIgnoreCase("splice_donor") &&
+     * !excludeSet.contains(consequenceTypeMap.get("splice_donor").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "splice_donor")); continue; }
+     *
+     * if(featureMap.getFeatureType(). equalsIgnoreCase("splice_acceptor") &&
+     * !excludeSet.contains(consequenceTypeMap.get("splice_acceptor").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "splice_acceptor")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("exon") &&
+     * !excludeSet.contains(consequenceTypeMap.get("exon").getSoTerm())) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "exon"));
+     *
+     * //	int codonPosition = -1; //	if (!isUTR &&
+     * featureMap.getBiotype().equalsIgnoreCase("protein_coding")) { if
+     * (isFeatureUTR.get(featureMap.getTranscriptStableId()) != null &&
+     * !isFeatureUTR.get(featureMap.getTranscriptStableId()) &&
+     * (featureMap.getBiotype().equalsIgnoreCase("protein_coding") ||
+     * featureMap.getBiotype().equalsIgnoreCase("nonsense_mediated_decay"))) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "coding_sequence")); // &&
+     * !featureMap.getExonPhase().equals("-1") ==> not needed!! // If exon
+     * contains a UTR part is not processed here as 'if' clause above does not
+     * allow to enter this code // so there is not need to check if phase is -1
+     * (which means that there is a 5'-UTR part)
+     * if(!featureMap.getExonPhase().equals("")) { int aaPosition = -1; int
+     * exonOffset = -1; if(featureMap.getStrand().equals("1")) { // If ExonPhase
+     * is -1 means we are in an exon with UTR and is not the UTR part, // we
+     * only need to calculate the offset in cdna without
+     * getTranscriptCdnaCodingStart() exonOffset = variant.getPosition() -
+     * featureMap.getStart() + 1; if(featureMap.getExonPhase() != null &&
+     * featureMap.getExonPhase().equals("-1") && exonOffset >
+     * featureMap.getTranscriptCdnaCodingStart()) { aaPosition = ((exonOffset -
+     * featureMap.getTranscriptCdnaCodingStart())/3)+1;
+     * System.out.println("UTR-EXON: aaPosition: "+aaPosition); }else {
+     * aaPosition = ((exonOffset +
+     * featureMap.getExonCdnaCodingStart()-featureMap.getTranscriptCdnaCodingStart()
+     * -1 )/3)+1; System.out.println("EXON: aaPosition: "+aaPosition); } }else {
+     * exonOffset = featureMap.getEnd()-variant.getPosition()+1;
+     * if(featureMap.getExonPhase() != null &&
+     * featureMap.getExonPhase().equals("-1") && exonOffset >
+     * featureMap.getTranscriptCdnaCodingStart()) { aaPosition = ((exonOffset -
+     * featureMap.getTranscriptCdnaCodingStart())/3)+1; }else { aaPosition =
+     * ((exonOffset +
+     * featureMap.getExonCdnaCodingStart()-featureMap.getTranscriptCdnaCodingStart()
+     * - 1)/3)+1; } }
+     *
+     * String[] codons = getSequenceByCodon(variant, featureMap);
+     * if(DNASequenceUtils.codonToAminoacidShort.get(codons[0]) != null &&
+     * DNASequenceUtils.codonToAminoacidShort.get(codons[1]) != null) {
+     * if(DNASequenceUtils.codonToAminoacidShort.get(codons[0]).equals(DNASequenceUtils.codonToAminoacidShort.get(codons[1]))){
+     * //	this.addConsequenceType(transcript, "synonymous_codon", "SO:0001588",
+     * "In coding sequence, not resulting in an amino acid change (silent
+     * mutation)", "consequenceTypeType" );
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "synonymous_codon", aaPosition,
+     * DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]),
+     * codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T")));
+     * }else{ //	this.addConsequenceType(transcript, "non_synonymous_codon",
+     * "SO:0001583", "In coding sequence and results in an amino acid change in
+     * the encoded peptide sequence", "consequenceTypeType",
+     * DNASequenceUtils.codonToAminoacidShort.get(referenceSequence)+"/"+
+     * DNASequenceUtils.codonToAminoacidShort.get(alternative),
+     * referenceSequence.replace("U", "T")+"/"+alternative.replace("U", "T") );
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "non_synonymous_codon", aaPosition,
+     * DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]),
+     * codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T")));
+     *
+     * if
+     * ((!DNASequenceUtils.codonToAminoacidShort.get(codons[0]).toLowerCase().equals("stop"))&&
+     * (DNASequenceUtils.codonToAminoacidShort.get(codons[1]).toLowerCase().equals("stop"))){
+     * //	this.addConsequenceType(transcript, "stop_gained", "SO:0001587", "In
+     * coding sequence, resulting in the gain of a stop codon",
+     * "consequenceTypeType",
+     * DNASequenceUtils.codonToAminoacidShort.get(referenceSequence)+"/"+
+     * DNASequenceUtils.codonToAminoacidShort.get(alternative),
+     * referenceSequence.replace("U", "T")+"/"+alternative.replace("U", "T") );
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "stop_gained", aaPosition,
+     * DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]),
+     * codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T"))); }
+     *
+     * if
+     * ((DNASequenceUtils.codonToAminoacidShort.get(codons[0]).toLowerCase().equals("stop"))&&
+     * (!DNASequenceUtils.codonToAminoacidShort.get(codons[1]).toLowerCase().equals("stop"))){
+     * //	this.addConsequenceType(transcript, "stop_lost", "SO:0001578", "In
+     * coding sequence, resulting in the loss of a stop codon",
+     * "consequenceTypeType",
+     * DNASequenceUtils.codonToAminoacidShort.get(referenceSequence)+"/"+
+     * DNASequenceUtils.codonToAminoacidShort.get(alternative),
+     * referenceSequence.replace("U", "T")+"/"+alternative.replace("U", "T") );
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "stop_lost", aaPosition,
+     * DNASequenceUtils.codonToAminoacidShort.get(codons[0])+"/"+DNASequenceUtils.codonToAminoacidShort.get(codons[1]),
+     * codons[0].replaceAll("U", "T")+"/"+codons[1].replaceAll("U", "T"))); } }
+     * } } } continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("regulatory_region") &&
+     * !excludeSet.contains(consequenceTypeMap.get("regulatory_region").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "regulatory_region"));
+     *
+     * if(featureMap.getFeatureName().equalsIgnoreCase("dnase1") ||
+     * featureMap.getFeatureName().equalsIgnoreCase("faire")) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "dnase1")); }
+     *
+     * if(featureMap.getFeatureName().equalsIgnoreCase("PolII") ||
+     * featureMap.getFeatureName().equalsIgnoreCase("PolIII")) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "polymerase")); }
+     *
+     * continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("tfbs") &&
+     * !excludeSet.contains(consequenceTypeMap.get("tfbs").getSoTerm())) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "tfbs")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("mirna_target") &&
+     * !excludeSet.contains(consequenceTypeMap.get("mirna_target").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "mirna_target")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("upstream") &&
+     * !excludeSet.contains(consequenceTypeMap.get("upstream").getSoTerm())) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "upstream")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("downstream") &&
+     * !excludeSet.contains(consequenceTypeMap.get("downstream").getSoTerm())) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "downstream")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("5_prime_utr") &&
+     * !excludeSet.contains(consequenceTypeMap.get("5_prime_utr").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "5_prime_utr")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("3_prime_utr") &&
+     * !excludeSet.contains(consequenceTypeMap.get("3_prime_utr").getSoTerm()))
+     * {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "3_prime_utr")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("CpG_island") &&
+     * !excludeSet.contains(consequenceTypeMap.get("cpg_island").getSoTerm())) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, "cpg_island")); continue; }
+     *
+     * if(featureMap.getFeatureType().equalsIgnoreCase("snp") &&
+     * !excludeSet.contains(consequenceTypeMap.get("snp").getSoTerm())) { //
+     * special method snps =
+     * snpDbAdaptor.getAllBySnpId(featureMap.getFeatureName()); if(snps != null
+     * && snps.size() > 0) {
+     * genomicVariantEffectList.add(createGenomicVariantConsequenceType(variant,
+     * featureMap, snps.get(0), "snp")); } continue; }
+     *
+     * }
+     * }else { // intergenic!! //	genomicVariantEffectList = new
+     * ArrayList<GenomicVariantEffect>(1);
+     *
+     * }
+     */
 }
