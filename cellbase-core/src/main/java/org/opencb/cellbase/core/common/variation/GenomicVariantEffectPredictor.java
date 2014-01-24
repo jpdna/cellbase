@@ -130,12 +130,12 @@ public class GenomicVariantEffectPredictor {
         List<GenomicVariantEffect> genomicVariantEffectList = new ArrayList<>();
 //        List<Snp> snps;
 
-        Map<String, Boolean> isFeatureUTR = new HashMap<String, Boolean>();
+//        Map<String, Boolean> isFeatureUTR = new HashMap<String, Boolean>();
         //		boolean isUTR = false;
 
         //		Criteria criteria = this.openSession().createCriteria(FeatureMap.class);
         //		Criteria criteria = session.createCriteria(FeatureMap.class);
-        int chunkId;
+//        int chunkId;
 
 
 //        List<FeatureMap> featureMapList = null;

@@ -24,11 +24,11 @@ public class RegulatoryRegion implements java.io.Serializable {
     private String featureType;
     private String score;
     private String frame;
+    private String matrix;
     
     private List<String> chunkIds;
     private List<String> cellTypes;
-    
-    
+
         /*
         "_id" : ObjectId("51f7a0197ee4a2ea823642c7"),
         "chromosome" : "19",
@@ -195,7 +195,8 @@ public class RegulatoryRegion implements java.io.Serializable {
     }
 
     public RegulatoryRegion(String _id, String name, String alias, String featureClass, String chromosome, int start, int end, 
-            String strand, String source, String featureType, String score, String frame, List<String> chunkIds, List<String> cellTypes) {
+            String strand, String source, String featureType, String score, String frame, String matrix,
+            List<String> chunkIds, List<String> cellTypes) {
         this._id = _id;
         this.name = name;
         this.alias = alias;
@@ -208,6 +209,7 @@ public class RegulatoryRegion implements java.io.Serializable {
         this.featureType = featureType;
         this.score = score;
         this.frame = frame;
+        this.matrix = matrix;
         this.chunkIds = chunkIds;
         this.cellTypes = cellTypes;
     }
@@ -284,6 +286,14 @@ public class RegulatoryRegion implements java.io.Serializable {
         this.frame = frame;
     }
 
+    public String getMatrix() {
+        return matrix;
+    }
+
+    public void setMatrix(String matrix) {
+        this.matrix = matrix;
+    }
+    
     public String getName() {
         return name;
     }

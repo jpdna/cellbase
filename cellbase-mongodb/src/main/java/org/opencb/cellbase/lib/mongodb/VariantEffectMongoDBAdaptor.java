@@ -61,9 +61,18 @@ public class VariantEffectMongoDBAdaptor extends MongoDBAdaptor implements Varia
         List<QueryResult> queryResults = new ArrayList<>(variants.size());
         GenomicVariantEffectPredictor genomicVariantEffectPredictor = new GenomicVariantEffectPredictor();
         
+        long dbTimeStart, dbTimeEnd, dbTimeEnd2;
+        
+        // TODO This option is MUCH faster, but don't know how to group by variant and intergenics won't be found with the current code :(
+//        dbTimeStart = System.currentTimeMillis();
+//        List<Gene> genes = getAllGenesByVariantList(variants);
+//        dbTimeEnd = System.currentTimeMillis();
+//        Logger.getLogger(getClass().getCanonicalName()).log(Level.INFO, 
+//                        "* get genes = {0}\n", new Object[]{dbTimeEnd - dbTimeStart});
+                
         for (GenomicVariant genomicVariant : variants) {
             QueryResult queryResult = new QueryResult();
-            long dbTimeStart, dbTimeEnd;
+            
             List<GenomicVariantEffect> list;
             if (genomicVariant.getPosition() >= 0) {
                 dbTimeStart = System.currentTimeMillis();
@@ -84,40 +93,6 @@ public class VariantEffectMongoDBAdaptor extends MongoDBAdaptor implements Varia
             queryResults.add(queryResult);
         }
         
-        
-//        List<DBObject> queries = new ArrayList<>(variants.size());
-//        for (GenomicVariant genomicVariant : variants) {
-//            QueryBuilder builder = QueryBuilder.start("chromosome").is(genomicVariant.getChromosome())
-//                    .and("start").lessThanEquals(genomicVariant.getPosition())
-//                    .and("end").greaterThanEquals(genomicVariant.getPosition());
-//            queries.add(builder.get());
-//        }
-//
-//        options = addExcludeReturnFields("transcripts.xrefs", options);
-//
-//        BasicDBObject returnFields = getReturnFields(options);
-//        BasicDBList list = executeFind(queries.get(0), returnFields, options, db.getCollection("core"));
-//        long dbTimeStart, dbTimeEnd;
-//        try {
-//
-//
-//            GenomicVariantEffectPredictor genomicVariantEffectPredictor = new GenomicVariantEffectPredictor();
-//            List<Gene> regions = jsonObjectMapper.readValue(list.toString(), new TypeReference<List<Gene>>() { });
-//            dbTimeStart = System.currentTimeMillis();
-//            List<GenomicVariantEffect> a = genomicVariantEffectPredictor.getAllEffectsByVariant(variants.get(0), regions, null);
-//            dbTimeEnd = System.currentTimeMillis();
-//
-//            QueryResult queryResult = new QueryResult();
-//            queryResult.setDBTime((dbTimeEnd - dbTimeStart));
-//            queryResult.setNumResults(list.size());
-//            queryResult.setResult(a);
-//
-//            queryResults.add(queryResult);
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
         return queryResults;
     }
 
@@ -147,19 +122,47 @@ public class VariantEffectMongoDBAdaptor extends MongoDBAdaptor implements Varia
     }
 
     @Override
+    public List<Gene> getAllGenesByVariantList(List<GenomicVariant> variants) {
+        List<Gene> genes = null;
+        try {
+            List<DBObject> queries = new ArrayList<>(variants.size());
+            for (GenomicVariant genomicVariant : variants) {
+                QueryBuilder builder = QueryBuilder.start("chromosome").is(genomicVariant.getChromosome())
+                        .and("start").lessThanEquals(genomicVariant.getPosition())
+                        .and("end").greaterThanEquals(genomicVariant.getPosition());
+                queries.add(builder.get());
+            }
+            QueryBuilder builder = new QueryBuilder();
+            builder.or(queries.toArray(new DBObject[queries.size()]));
+            
+            // TODO Configurable species and version
+            GeneMongoDBAdaptor adaptor = (GeneMongoDBAdaptor) new MongoDBAdaptorFactory().getGeneDBAdaptor("hsapiens", "v3");
+            QueryOptions options = new QueryOptions();
+            options = adaptor.addExcludeReturnFields("transcripts.xrefs", options);
+
+            BasicDBObject returnFields = adaptor.getReturnFields(options);
+            BasicDBList list = adaptor.executeFind(builder.get(), returnFields, options, db.getCollection("core"));
+            genes = jsonObjectMapper.readValue(list.toString(), new TypeReference<List<Gene>>() { });
+        } catch (JsonParseException | JsonMappingException ex) {
+            Logger.getLogger(VariantEffectMongoDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(VariantEffectMongoDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return genes;
+    }
+    
+    @Override
     public List<RegulatoryRegion> getAllRegulatoryRegionsByVariant(GenomicVariant genomicVariant) {
         List<RegulatoryRegion> regions = null;
         try {
-            QueryBuilder builder = QueryBuilder.start("chromosome").is(genomicVariant.getChromosome())
-                    .and("start").lessThanEquals(genomicVariant.getPosition())
-                    .and("end").greaterThanEquals(genomicVariant.getPosition());
-
             RegulatoryRegionMongoDBAdaptor adaptor = (RegulatoryRegionMongoDBAdaptor) new MongoDBAdaptorFactory().getRegulatoryRegionDBAdaptor("hsapiens", "v3");
             QueryOptions options = new QueryOptions();
             options = adaptor.addExcludeReturnFields("chunkIds", options);
-
-            BasicDBObject returnFields = adaptor.getReturnFields(options);
-            BasicDBList list = adaptor.executeFind(builder.get(), returnFields, options, db.getCollection("regulatory_region"));
+            
+            BasicDBList list = (BasicDBList) adaptor.getAllByRegion(genomicVariant.getChromosome(), 
+                    genomicVariant.getPosition(), genomicVariant.getPosition(), options).getResult();
+            
             regions = jsonObjectMapper.readValue(list.toString(), new TypeReference<List<RegulatoryRegion>>() { });
         } catch (JsonParseException | JsonMappingException ex) {
             Logger.getLogger(VariantEffectMongoDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
@@ -169,6 +172,6 @@ public class VariantEffectMongoDBAdaptor extends MongoDBAdaptor implements Varia
         
         return regions;
     }
-    
+
    
 }

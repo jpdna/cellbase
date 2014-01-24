@@ -39,6 +39,8 @@ public interface VariantEffectDBAdaptor {
 
     public List<Gene> getAllGenesByVariant(GenomicVariant variant);
     
+    public List<Gene> getAllGenesByVariantList(List<GenomicVariant> variants);
+    
     public List<RegulatoryRegion> getAllRegulatoryRegionsByVariant(GenomicVariant variant);
     
     
