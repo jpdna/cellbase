@@ -530,7 +530,7 @@ public class GeneParser {
                 aliases.add(alias);
             }
 
-            miRNAGene = new MiRNAGene(fields[1], fields[2], fields[3], fields[4], aliases, new ArrayList<MiRNAGene.MiRNAMature>());
+            miRNAGene = new MiRNAGene(fields[1], fields[2], fields[3], fields[4], aliases, new ArrayList<MiRNAMature>());
 
             // Second, read the miRNA matures, field #6
             mirnaMatures = fields[6].split(",");
